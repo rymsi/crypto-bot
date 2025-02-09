@@ -26,7 +26,7 @@ func main() {
 	}
 
 	wsClient := websocket.NewClient(cfg.CoinbaseWSURL, sugar)
-	kafkaProducer := kafka.NewProducer(cfg.KafkaBrokers, cfg.KafkaTopic, sugar)
+	kafkaProducer := kafka.NewProducer(cfg.KafkaBrokers, "btc-usd", sugar)
 
 	// Start Service
 	sugar.Infow("Starting ingestor service...")

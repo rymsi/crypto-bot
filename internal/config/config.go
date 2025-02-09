@@ -9,14 +9,12 @@ type Config struct {
 	CoinbaseWSURL string   `mapstructure:"coinbase_ws_url"`
 	ProductIDs    []string `mapstructure:"product_ids"`
 	KafkaBrokers  []string `mapstructure:"kafka_brokers"`
-	KafkaTopic    string   `mapstructure:"kafka_topic"`
 	LogLevel      string   `mapstructure:"log_level"`
 }
 
 func LoadConfig(sugar *zap.SugaredLogger) (*Config, error) {
 	viper.SetDefault("coinbase_ws_url", "wss://ws-feed.exchange.coinbase.com")
 	viper.SetDefault("product_ids", []string{"BTC-USD"})
-	viper.SetDefault("kafka_topic", "market_data")
 	viper.SetDefault("log_level", "info")
 	viper.SetDefault("kafka_brokers", []string{"localhost:9092"})
 
