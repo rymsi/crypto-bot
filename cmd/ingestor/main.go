@@ -19,7 +19,7 @@ func main() {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	cfg, err := config.LoadConfig(sugar)
+	cfg, err := config.LoadIngestorConfig(sugar)
 	if err != nil {
 		sugar.Errorw("Failed to load config", "error", err)
 		return
@@ -48,22 +48,15 @@ func main() {
 	}()
 
 	// Wait for SIGINT or SIGTERM or timer to run out
-	stopService := make(chan bool, 2)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	timer := time.NewTimer(5 * time.Second)
 
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
+	select {
+	case <-sigChan:
 		sugar.Infow("Received SIGINT or SIGTERM, stopping ingestor service...")
 		signal.Stop(sigChan)
-		stopService <- true
-	}()
-
-	go func() {
-		time.Sleep(5 * time.Second)
+	case <-timer.C:
 		sugar.Infow("Timer expired, stopping ingestor service...")
-		stopService <- true
-	}()
-
-	<-stopService
+	}
 }
