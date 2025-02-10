@@ -25,8 +25,8 @@ func NewService(ctx context.Context, brokers []string, groupID string, logger *z
 		eventChannel: make(chan []byte, 1000),
 	}
 
-	consumerKafkaTopic := "btc-usd"
-	producerKafkaTopic := "btc-usd-signals"
+	consumerKafkaTopic := "btc_usd"
+	producerKafkaTopic := "btc_usd_signals"
 
 	consumer, err := kafka.NewConsumer(ctx, brokers, consumerKafkaTopic, groupID, nil, logger)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *Service) produceSignals() {
 					avgPrice = avgPrice / float64(len(buffer))
 
 					signal := map[string]interface{}{
-						"avgPrice":  avgPrice,
+						"avg_price": avgPrice,
 						"timestamp": buffer[4]["timestamp"],
 					}
 

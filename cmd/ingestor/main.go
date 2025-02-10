@@ -26,7 +26,7 @@ func main() {
 	}
 
 	wsClient := websocket.NewClient(cfg.CoinbaseWSURL, sugar)
-	kafkaProducer, err := kafka.NewProducer(cfg.KafkaBrokers, "btc-usd", sugar)
+	kafkaProducer, err := kafka.NewProducer(cfg.KafkaBrokers, "btc_usd", sugar)
 	if err != nil {
 		sugar.Errorw("Failed to create kafka producer", "error", err)
 		return

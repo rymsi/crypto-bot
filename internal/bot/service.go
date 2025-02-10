@@ -16,7 +16,7 @@ type Service struct {
 func NewService(ctx context.Context, brokers []string, consumerGroup string, logger *zap.SugaredLogger) (*Service, error) {
 	service := &Service{ctx: ctx, logger: logger}
 
-	kafkaTopic := "btc-usd"
+	kafkaTopic := "btc_usd"
 	consumer, err := kafka.NewConsumer(ctx, brokers, kafkaTopic, consumerGroup, service.handleMessage, logger)
 	if err != nil {
 		return nil, err
