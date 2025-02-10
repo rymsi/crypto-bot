@@ -26,7 +26,11 @@ func main() {
 	}
 
 	wsClient := websocket.NewClient(cfg.CoinbaseWSURL, sugar)
-	kafkaProducer := kafka.NewProducer(cfg.KafkaBrokers, "btc-usd", sugar)
+	kafkaProducer, err := kafka.NewProducer(cfg.KafkaBrokers, "btc-usd", sugar)
+	if err != nil {
+		sugar.Errorw("Failed to create kafka producer", "error", err)
+		return
+	}
 
 	// Start Service
 	sugar.Infow("Starting ingestor service...")
@@ -50,7 +54,7 @@ func main() {
 	// Wait for SIGINT or SIGTERM or timer to run out
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(300 * time.Second)
 
 	select {
 	case <-sigChan:

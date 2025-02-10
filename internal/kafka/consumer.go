@@ -15,6 +15,7 @@ type Consumer struct {
 	consumerGroup sarama.ConsumerGroup
 	topic         string
 	cgHandler     *consumerGroupHandler
+	ready         chan bool
 	logger        *zap.SugaredLogger
 }
 
@@ -27,9 +28,13 @@ func NewConsumer(ctx context.Context, brokers []string, topic string, group stri
 		logger.Errorw("Failed to create consumer group", "error", err)
 		return nil, err
 	}
+
+	ready := make(chan bool)
+
 	cgHandler := &consumerGroupHandler{
 		handler: handler,
 		logger:  logger,
+		ready:   ready,
 	}
 
 	return &Consumer{
@@ -37,6 +42,7 @@ func NewConsumer(ctx context.Context, brokers []string, topic string, group stri
 		consumerGroup: consumerGroup,
 		topic:         topic,
 		cgHandler:     cgHandler,
+		ready:         ready,
 		logger:        logger,
 	}, nil
 }
@@ -68,13 +74,23 @@ func (c *Consumer) Close() error {
 	return c.consumerGroup.Close()
 }
 
+func (c *Consumer) SetMessageHandler(handler MessageHandler) {
+	c.cgHandler.handler = handler
+}
+
+func (c *Consumer) Ready() <-chan bool {
+	return c.ready
+}
+
 type consumerGroupHandler struct {
 	handler MessageHandler
 	logger  *zap.SugaredLogger
+	ready   chan bool
 }
 
 func (h *consumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error {
 	h.logger.Info("Consumer group handler setup")
+	close(h.ready)
 	return nil
 }
 
@@ -88,7 +104,7 @@ func (h *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 	for message := range claim.Messages() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		err := h.handler(ctx, message.Value)
-		h.logger.Infof("Message processed: %s", message.Value)
+		// h.logger.Infow("Message consumed")
 		if err != nil {
 			h.logger.Errorf("Error handling message: %s", err)
 		} else {

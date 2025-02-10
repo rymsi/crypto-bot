@@ -11,17 +11,17 @@ type Producer struct {
 	logger       *zap.SugaredLogger
 }
 
-func NewProducer(brokers []string, topic string, logger *zap.SugaredLogger) *Producer {
+func NewProducer(brokers []string, topic string, logger *zap.SugaredLogger) (*Producer, error) {
 	syncProducer, err := sarama.NewSyncProducer(brokers, nil)
 	if err != nil {
 		logger.Errorw("Failed to create Kafka producer", "error", err)
-		return nil
+		return nil, err
 	}
 	return &Producer{
 		syncProducer: syncProducer,
 		topic:        topic,
 		logger:       logger,
-	}
+	}, nil
 
 }
 
@@ -37,7 +37,7 @@ func (p *Producer) Produce(message []byte) error {
 		return err
 	}
 
-	p.logger.Debugw("Message sent to Kafka", "partition", partition, "offset", offset)
+	p.logger.Infow("Message sent to Kafka", "partition", partition, "offset", offset)
 
 	return nil
 
