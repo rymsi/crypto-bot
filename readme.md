@@ -35,17 +35,19 @@ The service consists of several microservices and components:
 
 1. Ingestor service subscribes to Coinbase WebSocket feed for BTC-USD ticker data
 2. Raw ticker data is published to `btc_usd` Kafka topic
-3. ksqlDB processes the data and creates derived streams:
+3. Signaler service processes `btc_usd` data to generate trading signals and publishes to `btc_usd_signals` Kafka topic.
    - `btc_usd_signals` for price signals and indicators
    - `btc_usd_unified` combining ticker data with signals
-4. Signaler service processes the unified data to generate trading signals
-5. Bot service consumes the processed data and signals for trade execution
+4. ksqlDB merges the `btc_usd` and `btc_usd_signals` streams to create a unified stream `btc_usd_unified`
+    - This is an added complication but it simplifies the bot service since it won't have to do any stream processing.
+5. Bot service consumes the `btc_usd_unified` stream for trade execution
 
 ## Setup
 
 ### Prerequisites
 
 - Docker and Docker Compose v2.x or higher
+
 - Go 1.21 or higher
 
 
