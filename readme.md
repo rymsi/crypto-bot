@@ -23,9 +23,12 @@ The service consists of several microservices and components:
 
 ### System Diagram
 ```
-[Coinbase WebSocket] → [Ingestor Service] → [Kafka] → [ksqlDB] → [Bot Service]
-                                                   ↓
-                                          [Signaler Service]
+
+                                            [ksqlDB]
+                                              ↑ ↓ 
+|Coinbase WebSocket| → [Ingestor Service] → [Kafka] → [Bot Service] → [TODO]
+                                              ↓ ↑
+                                        [Signaler Service]
 ```
 
 ## Data Flow
