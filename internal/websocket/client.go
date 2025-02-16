@@ -1,9 +1,14 @@
 package websocket
 
 import (
-	"errors"
+	"encoding/json"
+	"strconv"
+	"time"
+
+	"ingestor-service/internal/config"
 
 	"github.com/gorilla/websocket"
+	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
@@ -11,12 +16,14 @@ type Client struct {
 	url    string
 	conn   *websocket.Conn
 	logger *zap.SugaredLogger
+	config *config.IngestorConfig
 }
 
-func NewClient(url string, logger *zap.SugaredLogger) *Client {
+func NewClient(url string, config *config.IngestorConfig, logger *zap.SugaredLogger) *Client {
 	return &Client{
 		url:    url,
 		logger: logger,
+		config: config,
 	}
 }
 
@@ -35,28 +42,33 @@ func (c *Client) Connect() error {
 
 }
 
-func (c *Client) Subscribe(productIds []string, channels []string) error {
-	if c.conn == nil {
-		return errors.New("not connected to Coinbase WebSocket")
-	}
+func (c *Client) Subscribe(productIds []string, channel string) error {
 
 	message := map[string]interface{}{
 		"type":        "subscribe",
 		"product_ids": productIds,
-		"channels":    channels,
+		"channel":     channel,
 	}
 
-	err := c.conn.WriteJSON(message)
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+
+	c.logger.Infow("Sending subscribe message", "message", string(messageBytes))
+	err = c.conn.WriteMessage(websocket.TextMessage, messageBytes)
 	if err != nil {
 		c.logger.Errorw("Failed to subscribe to Coinbase WebSocket", "error", err)
 		return err
 	}
-	c.logger.Infow("Subscribed to Coinbase WebSocket")
+
 	return nil
 }
 
 func (c *Client) ReadMessages(messages chan<- []byte, stopchan <-chan bool) error {
 	defer close(messages)
+
+	sequenceCache := cache.New(1*time.Minute, 2*time.Minute)
 
 	for {
 		select {
@@ -69,6 +81,29 @@ func (c *Client) ReadMessages(messages chan<- []byte, stopchan <-chan bool) erro
 				c.logger.Errorw("Failed to read message from Coinbase WebSocket", "error", err)
 				return err
 			}
+
+			// Parse message to get sequence
+			var data map[string]interface{}
+			if err := json.Unmarshal(message, &data); err != nil {
+				c.logger.Errorw("Failed to parse message", "error", err)
+				continue
+			}
+
+			// Check if sequence exists in message
+			if seq, ok := data["sequence"].(float64); ok {
+				// Convert to int64 for cache key
+				seqInt := int64(seq)
+
+				// Check if sequence already seen
+				if _, found := sequenceCache.Get(strconv.FormatInt(seqInt, 10)); found {
+					c.logger.Infow("Skipping duplicate sequence", "sequence", seqInt)
+					continue
+				}
+
+				// Store sequence in cache
+				sequenceCache.Set(strconv.FormatInt(seqInt, 10), true, 1*time.Minute)
+			}
+
 			c.logger.Infow("Received message from Coinbase WebSocket", "message", string(message))
 			messages <- message
 		}

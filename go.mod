@@ -47,6 +47,8 @@ require (
 
 require (
 	github.com/gorilla/websocket v1.5.3
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.19.0
 	go.uber.org/multierr v1.10.0 // indirect
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )

@@ -11,7 +11,7 @@ type IngestorConfig struct {
 }
 
 func LoadIngestorConfig(sugar *zap.SugaredLogger) (*IngestorConfig, error) {
-	viper.SetDefault("coinbase_ws_url", "wss://ws-feed.exchange.coinbase.com")
+	viper.SetDefault("coinbase_ws_url", "wss://advanced-trade-ws.coinbase.com")
 	viper.SetDefault("kafka_brokers", []string{"localhost:9092"})
 
 	// You can set config file & path if desired

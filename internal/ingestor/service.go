@@ -31,12 +31,12 @@ func (s *Service) Start() error {
 		return err
 	}
 
-	err = s.client.Subscribe([]string{"BTC-USD"}, []string{"ticker"})
+	err = s.client.Subscribe([]string{"BTC-USD"}, "ticker")
 	if err != nil {
 		return err
 	}
 
-	messages := make(chan []byte, 100)
+	messages := make(chan []byte, 1000000)
 
 	go s.client.ReadMessages(messages, s.stop)
 
@@ -66,12 +66,13 @@ func (s *Service) RelayMessage(message []byte) error {
 }
 
 func (s *Service) Stop() error {
+	s.logger.Infow("Stopping ingestor service...")
 	s.stop <- true
 
 	err := s.client.Disconnect()
 	if err != nil {
 		return err
 	}
-
+	s.logger.Infow("Ingestor service stopped")
 	return nil
 }

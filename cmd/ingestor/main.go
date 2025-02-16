@@ -11,11 +11,18 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
 	// Setup
-	logger, _ := zap.NewProduction()
+
+	loggerConfig := zap.NewProductionConfig()
+	loggerConfig.Encoding = "console"
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	logger, _ := loggerConfig.Build()
+
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
@@ -25,7 +32,7 @@ func main() {
 		return
 	}
 
-	wsClient := websocket.NewClient(cfg.CoinbaseWSURL, sugar)
+	wsClient := websocket.NewClient(cfg.CoinbaseWSURL, cfg, sugar)
 	kafkaProducer, err := kafka.NewProducer(cfg.KafkaBrokers, "btc_usd", sugar)
 	if err != nil {
 		sugar.Errorw("Failed to create kafka producer", "error", err)
@@ -43,12 +50,10 @@ func main() {
 	}
 
 	defer func() {
-		sugar.Infow("Stopping ingestor service...")
 		err = ingestorService.Stop()
 		if err != nil {
 			sugar.Errorw("Failed to stop ingestor service", "error", err)
 		}
-		sugar.Infow("Ingestor service stopped")
 	}()
 
 	// Wait for SIGINT or SIGTERM or timer to run out
