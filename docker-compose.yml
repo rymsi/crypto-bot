@@ -22,7 +22,7 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,INTERNAL://kafka:29092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_CREATE_TOPICS=btc_usd:1:1,btc_usd_signals:1:1,btc_usd_unified:1:1
+      - KAFKA_CREATE_TOPICS=btc_usd:1:1
     depends_on:
       - zookeeper
 
