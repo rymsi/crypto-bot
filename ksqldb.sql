@@ -72,3 +72,4 @@ FROM btc_usd_stream_enriched
 JOIN btc_usd_signals_stream
 WITHIN 5 SECONDS
 ON btc_usd_stream_enriched.current_second = btc_usd_signals_stream.window_end;
+

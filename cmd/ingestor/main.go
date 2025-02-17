@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -59,13 +58,8 @@ func main() {
 	// Wait for SIGINT or SIGTERM or timer to run out
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	timer := time.NewTimer(300 * time.Second)
 
-	select {
-	case <-sigChan:
-		sugar.Infow("Received SIGINT or SIGTERM, stopping ingestor service...")
-		signal.Stop(sigChan)
-	case <-timer.C:
-		sugar.Infow("Timer expired, stopping ingestor service...")
-	}
+	<-sigChan
+	sugar.Infow("Received SIGINT or SIGTERM, stopping ingestor service...")
+	signal.Stop(sigChan)
 }
