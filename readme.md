@@ -1,6 +1,6 @@
 # Crypto Trading System with ML-Powered Signals
 
-This project implements a cryptocurrency trading system that uses real-time market trades ingested from Coinbase's Websockets API to decide whether to buy or sell BTC. To aid the RL model, the system also uses a ksqlDB stream to calculate signals such as volume and average price over a moving window. Currently, only paper trades are supported with a hardcoded $100,000 USD starting balance
+This project implements a cryptocurrency trading system that uses real-time market trades ingested from Coinbase's Websockets API to decide whether to buy or sell BTC. To aid the DQN RL model, the system also uses a ksqlDB stream to calculate signals such as volume and average price over a moving window. Currently, only paper trades are supported with a hardcoded $100,000 USD starting balance
 
 ## Features
 
@@ -32,15 +32,15 @@ The system consists of several microservices and components:
 
 1. Ingestor service subscribes to Coinbase WebSocket feed for BTC-USD market trades
 2. Raw market trades are published to Kafka topics
-3. ksqlDB processes and enriches the data streams
+3. ksqlDB enriches the market trades stream with signals
 4. The ML pipeline can:
    - Train new models using historical data from a flat file structured like backtest.txt
    - Backtest strategies using a file structured like backtest.txt
    - Deploy models to the trader service
 5. Trader service uses the deployed ML models to:
-   - Process real-time market data
-   - Generate trading signals
-   - Execute trades on the exchange
+   - Process enriched market data from kafka
+   - Use Deep Q-Network RL model to predict buy or sell
+   - Keep track of BTC holdings and balance starting from a hardcoded $100k.
 
 ## Setup
 
