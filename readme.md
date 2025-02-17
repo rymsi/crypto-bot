@@ -23,9 +23,9 @@ The system consists of several microservices and components:
 ```
                                    [ksqlDB]
                                      ↑ ↓ 
-|Coinbase WebSocket| → [Ingestor] → [Kafka] → [Trader Service] → |Console Output|
+|Coinbase WebSocket| → [Ingestor] → [Kafka] → [Trader] → |Console Output|
 
-                            [ML Training Pipeline] 
+                            [DQL Training Pipeline] 
 ```
 
 ## Data Flow
