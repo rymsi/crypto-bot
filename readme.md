@@ -1,4 +1,4 @@
-# Crypto Trading System with ML-Powered Signals
+# Coinbase Paper-Trading Bot
 
 This project implements a cryptocurrency trading system that uses real-time market trades ingested from Coinbase's Websockets API to decide whether to buy or sell BTC. To aid the DQN RL model, the system also uses a ksqlDB stream to calculate signals such as volume and average price over a moving window. Currently, only paper trades are supported with a hardcoded $100,000 USD starting balance
 
