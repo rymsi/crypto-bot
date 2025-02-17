@@ -5,9 +5,9 @@ from kafka import KafkaConsumer
 from stable_baselines3 import DQN
 import logging
 import time
-
-KAFKA_BROKER = "localhost:9092"
-KAFKA_TOPIC = "BTC_USD_JOINED"
+import os
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "BTC_USD_JOINED")
 MODEL_PATH = "model"
 TRADE_LOG_FILE = "trade_logs.txt"
 INITIAL_BALANCE = 100000

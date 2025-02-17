@@ -1,79 +1,67 @@
-# Crypto Price Streaming Service
+# Crypto Trading System with ML-Powered Signals
 
-This project implements a real-time cryptocurrency price streaming service that ingests price data from Coinbase's WebSocket feed, processes it through Kafka and ksqlDB, and makes it available for analysis and automated trading signals.
+This project implements a cryptocurrency trading system that uses real-time market trades ingested from Coinbase's Websockets API to decide whether to buy or sell BTC. To aid the RL model, the system also uses a ksqlDB stream to calculate signals such as volume and average price over a moving window. Currently, only paper trades are supported with a hardcoded $100,000 USD starting balance
 
 ## Features
 
-- Real-time BTC-USD price data ingestion from Coinbase
+- Real-time BTC-USD market trades ingestion from Coinbase
 - Scalable data processing pipeline using Kafka
-- Stream processing and signal generation with ksqlDB
-- Automated trading signal generation
-- Modular microservices architecture
-- Docker-based deployment
+- Stream processing to generate trading signals with ksqlDB
+- Trading bot the uses RL Based Deep-Q Network to decide whether to buy or sell BTC
+- Backtesting capabilities on a flat file of historical data
+- 1-step deployment with Docker Compose
 
 ## Architecture
 
-The service consists of several microservices and components:
+The system consists of several microservices and components:
 
-- **Ingestor Service**: Connects to Coinbase WebSocket API to receive real-time BTC-USD ticker data and publishes it to Kafka
-- **Signaler Service**: Processes raw price data and generates trading signals
-- **Kafka**: Message broker for reliable and scalable data streaming
-- **ksqlDB**: Stream processing engine for real-time data analysis and signal generation
-- **Bot Service**: Consumes processed data and signals from Kafka for executing trading strategies
+- **Ingestor Service**: Connects to Coinbase WebSocket API to receive real-time BTC-USD market trades, converts data types (strings to floats, timestamps to Unix milliseconds), and publishes formatted events to Kafka
+- **Kafka & ksqlDB**: Message broker and stream processing for reliable data streaming and real-time analysis. ksqlDB processes trade events to generate signals like moving averages and volume metrics
+- **Trader Service**: Python service that uses a trained Deep Q-Network model to make trading decisions based on the enriched trade data from Kafka. 
 
 ### System Diagram
 ```
+                                   [ksqlDB]
+                                     ↑ ↓ 
+|Coinbase WebSocket| → [Ingestor] → [Kafka] → [Trader Service] → |Console Output|
 
-                                            [ksqlDB]
-                                              ↑ ↓ 
-|Coinbase WebSocket| → [Ingestor Service] → [Kafka] → [Bot Service] → [TODO]
-                                              ↓ ↑
-                                        [Signaler Service]
+                            [ML Training Pipeline] 
 ```
 
 ## Data Flow
 
-1. Ingestor service subscribes to Coinbase WebSocket feed for BTC-USD ticker data
-2. Raw ticker data is published to `btc_usd` Kafka topic
-3. Signaler service processes `btc_usd` data to generate trading signals and publishes to `btc_usd_signals` Kafka topic.
-4. ksqlDB merges the `btc_usd` and `btc_usd_signals` streams to create a unified stream `btc_usd_unified`
-    - This is an added complication but it simplifies the bot service since it won't have to do any stream processing.
-5. Bot service consumes the `btc_usd_unified` stream for trade execution
+1. Ingestor service subscribes to Coinbase WebSocket feed for BTC-USD market trades
+2. Raw market trades are published to Kafka topics
+3. ksqlDB processes and enriches the data streams
+4. The ML pipeline can:
+   - Train new models using historical data from a flat file structured like backtest.txt
+   - Backtest strategies using a file structured like backtest.txt
+   - Deploy models to the trader service
+5. Trader service uses the deployed ML models to:
+   - Process real-time market data
+   - Generate trading signals
+   - Execute trades on the exchange
 
 ## Setup
 
 ### Prerequisites
 
 - Docker and Docker Compose v2.x or higher
-
 - Go 1.21 or higher
+- Python 3.11 with pip
 
+### Running the system
 
-### Running the Services
-
-1. Start the infrastructure services:
+Start all the services:
 ```bash
 docker-compose up
 ```
 
-2. Start the application services:
-```bash
-# In separate terminals:
-go run cmd/ingestor/main.go
-go run cmd/signaler/main.go
-go run cmd/bot/main.go
-```
+### ML Model Training
 
-### Verification
-
-1. Check if services are running:
+Open and run the Jupyter notebook:
 ```bash
-docker-compose ps
-```
-
-2. View logs:
-```bash
-docker-compose logs -f
+jupyter notebook python/train_rl_agent.ipynb
 ```
 
 ## Configuration
@@ -81,41 +69,43 @@ docker-compose logs -f
 The services can be configured through environment variables or configuration files:
 
 - `config/ingestor_config.go`: Ingestor service configuration
-- `config/signaler_config.go`: Signaler service configuration
-- `config/bot_config.go`: Bot service configuration
+- `config/trader_config.go`: Trader service configuration
+- `python/config.py`: ML pipeline configuration
 
 ## Development
 
 ### Project Structure
 ```
 .
-├── cmd/                  # Application entry points
-├── internal/             # Private application code
-│   ├── bot/              # Bot service implementation
-│   ├── config/           # Configuration
-│   ├── ingestor/         # Ingestor service implementation
-│   ├── kafka/            # Kafka producers and consumers
-│   ├── signaler/         # Signaler service implementation
-│   └── websocket/        # WebSocket client implementation
-├── ksqldb.sql            # ksqlDB stream definitions
-└── deps-docker-compose.yml # Infrastructure services
+├── cmd/                     # Application entry points
+│   ├── ingestor/            # Ingestor service main
+│   └── signaler_deprecated/ # Deprecated signaler service
+├── internal/                # Private application code
+│   ├── config/              # Service configuration
+│   ├── ingestor/            # Ingestor service implementation
+│   ├── kafka/               # Kafka producers and consumers
+│   ├── signaler/            # Legacy signaler implementation
+│   └── websocket/           # WebSocket client implementation
+├── python/                  # ML and trading components
+│   ├── train_rl_agent.ipynb # Model training notebook
+│   ├── run_rl_agent.py      # Model deployment script
+│   ├── model.zip            # Trained model artifacts (generated by the training notebook)
+│   ├── trade_logs.txt       # Trading activity logs (generated by the trader service)
+│   └── backtest.txt         # Historical data for training and backtesting
+├── Dockerfile.ingestor      # Ingestor service container
+├── Dockerfile.trader        # Trading service container
+├── docker-compose.yml       # Service orchestration
+├── go.mod                   # Go dependencies
+├── go.sum                   # Go dependency checksums
+├── ksqldb.sql               # Stream processing definitions
+├── requirements.txt         # Python dependencies
 ```
 
-### Running Tests
-```bash
-go test ./...
-```
+## TODO
 
-## Troubleshooting
-
-Common issues and solutions:
-
-1. **Kafka Connection Issues**
-   - Ensure Kafka is running: `docker-compose ps`
-   - Check Kafka logs: `docker-compose logs kafka`
-
-
-
+- [ ] Use ksqldb version 0.29.0 instead of latest
+- [ ] Fix ksqldb.sql not running when ksqldb-server is started
+  - Workaround: Manually run `docker exec -it ksqldb-server ksql` and paste the contents of ksqldb.sql
 
 
 

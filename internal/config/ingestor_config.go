@@ -1,6 +1,9 @@
 package config
 
 import (
+	"os"
+	"strings"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -12,7 +15,16 @@ type IngestorConfig struct {
 
 func LoadIngestorConfig(sugar *zap.SugaredLogger) (*IngestorConfig, error) {
 	viper.SetDefault("coinbase_ws_url", "wss://advanced-trade-ws.coinbase.com")
-	viper.SetDefault("kafka_brokers", []string{"localhost:9092"})
+
+	// Check environment variable first for Kafka brokers
+	if brokersEnv := os.Getenv("KAFKA_BROKERS"); brokersEnv != "" {
+		brokers := strings.Split(brokersEnv, ",")
+		viper.SetDefault("kafka_brokers", brokers)
+		sugar.Infow("Using Kafka brokers from environment", "brokers", brokers)
+	} else {
+		viper.SetDefault("kafka_brokers", []string{"localhost:9092"})
+		sugar.Info("Using default Kafka broker: localhost:9092")
+	}
 
 	// You can set config file & path if desired
 	// viper.SetConfigFile(".env") // or "config.yaml", etc.
@@ -20,8 +32,8 @@ func LoadIngestorConfig(sugar *zap.SugaredLogger) (*IngestorConfig, error) {
 	viper.AutomaticEnv() // read env vars
 
 	if err := viper.ReadInConfig(); err != nil {
-		// it’s okay if no config file, handle if needed
-		sugar.Infow("No config file found, proceeding with env vars only. Err: %v\n", err)
+		// it's okay if no config file, handle if needed
+		sugar.Infow("No config file found, proceeding with env vars only", "error", err)
 	}
 
 	var cfg IngestorConfig
@@ -30,5 +42,4 @@ func LoadIngestorConfig(sugar *zap.SugaredLogger) (*IngestorConfig, error) {
 		return nil, err
 	}
 	return &cfg, nil
-
 }

@@ -1,0 +1,28 @@
+# Use an official Python runtime as the base image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies required for Python packages
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the model and agent code
+COPY python/model.zip .
+COPY python/run_rl_agent.py .
+
+# Set environment variables
+ENV KAFKA_BROKERS=kafka:29092
+ENV KAFKA_TOPIC=BTC_USD_JOINED
+
+# Run the agent
+CMD ["python", "run_rl_agent.py"]

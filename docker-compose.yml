@@ -27,6 +27,18 @@ services:
       - zookeeper
 
 
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    container_name: schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    depends_on:
+      - kafka
+
   ksqldb-server:
     image: confluentinc/ksqldb-server:latest
     container_name: ksqldb-server
@@ -45,16 +57,30 @@ services:
       - kafka
       - schema-registry
 
-
-
-  schema-registry:
-    image: confluentinc/cp-schema-registry:latest
-    container_name: schema-registry
-    ports:
-      - "8081:8081"
+  ingestor-service:
+    image: ingestor-service:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ingestor
+    container_name: ingestor-service
     environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=BTC_USD_JOINED
     depends_on:
       - kafka
+
+  trader-service:
+    image: trader-service:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.trader
+    container_name: trader-service
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=BTC_USD_JOINED
+    depends_on:
+      - kafka
+      - ksqldb-server
+      - ingestor-service
+
+  
